@@ -2,8 +2,26 @@
   "result": {
     "data": {
       "json": {
-        "version": 1,
-        "patches": []
+        "version": 2,
+        "patches": [
+          {
+            "id": 1,
+            "name": "HS ALTO",
+            "category": "normal",
+            "feature": "cache",
+            "fileName": "INVISÍVEL.3105",
+            "fileKey": "patches/1_INVISI_VEL.3105",
+            "fileUrl": "https://raw.githubusercontent.com/bts2019amo-ctrl/3105-remote-patches/main/patches/1_INVISI_VEL.3105",
+            "mimeType": "application/octet-stream",
+            "fileSize": 9619,
+            "version": 1,
+            "changelog": null,
+            "checksumSha256": "22bd985bdfaacc6624ffc5b86b4719bf23cc9b3e553146b5c00fb7fffd47094f",
+            "iconUrl": "https://raw.githubusercontent.com/bts2019amo-ctrl/3105-remote-patches/main/icons/1_IMG_1484.png",
+            "maintenance": false,
+            "updatedAt": 1792203188862
+          }
+        ]
       }
     }
   }
