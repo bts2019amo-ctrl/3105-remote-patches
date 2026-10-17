@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>3105 Remote</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0b0d12;--s:#12151c;--s2:#1a1e28;--b:#2a3040;--t:#e8eaef;--m:#8b93a7;--a:#e6753a;--w:#f5a623;--d:#ff5c5c}
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,system-ui;background:var(--bg);color:var(--t);padding:20px}
+.w{max-width:900px;margin:0 auto}.card{background:var(--s);border:1px solid var(--b);border-radius:14px;padding:16px;margin:12px 0}
+h1{font-size:1.2rem}h2{font-size:.95rem;margin-bottom:10px}label{font-size:.8rem;color:var(--m);display:block;margin:8px 0 4px}
+input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--b);background:var(--s2);color:var(--t)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{padding:10px 14px;border:0;border-radius:10px;font-weight:600;cursor:pointer;margin-top:8px}
+.bp{background:linear-gradient(135deg,var(--a),#c45a2a);color:#fff}.bg{background:var(--s2);color:var(--t);border:1px solid var(--b)}
+.bd{background:rgba(255,92,92,.15);color:var(--d)}.bw{background:rgba(245,166,35,.12);color:var(--w)}
+.fb{border:1.5px dashed var(--b);border-radius:10px;padding:12px;text-align:center;position:relative;color:var(--m)}
+.fb input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.item{display:flex;gap:10px;align-items:center;padding:10px;background:var(--s2);border-radius:12px;margin:8px 0;border:1px solid var(--b)}
+.item img,.ph{width:44px;height:44px;border-radius:10px;object-fit:cover}.ph{display:grid;place-items:center;background:var(--s)}
+.meta{flex:1;min-width:0}.meta h3{font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta p{font-size:.75rem;color:var(--m)}.hidden{display:none!important}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--s2);border:1px solid var(--b);padding:10px 14px;border-radius:10px;opacity:0;transition:.2s}
+.toast.on{opacity:1}.hint{font-size:.8rem;color:var(--m);margin-top:8px}a{color:var(--a)}
+</style></head><body><div class="w">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+<div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#e6753a,#c45a2a);display:grid;place-items:center;font-weight:700">31</div>
+<div><h1>3105 Remote</h1><div style="color:var(--m);font-size:.85rem">GitHub · 24h online</div></div></div>
+<div class="card" id="setup">
+<h2>Entrar</h2>
+<label>GitHub Token (repo)</label><input type="password" id="token" placeholder="ghp_..."/>
+<div class="row"><div><label>Owner</label><input id="owner" value="bts2019amo-ctrl"/></div>
+<div><label>Repo</label><input id="repo" value="3105-remote-patches"/></div></div>
+<button class="btn bp" onclick="go()">Entrar</button>
+<p class="hint">Token: <a href="https://github.com/settings/tokens/new?scopes=repo&description=3105" target="_blank">criar aqui</a> (marque repo)</p>
+</div>
+<div id="dash" class="hidden">
+<div class="card"><h2>Publicar</h2>
+<label>Nome</label><input id="name" placeholder="HS ALTO"/>
+<div class="row"><div><label>Categoria</label><select id="cat"><option value="normal">Normal</option><option value="max">Max</option></select></div>
+<div><label>Feature</label><select id="feat"><option value="external">External</option><option value="cache">Cache</option><option value="avatar">Avatar</option><option value="hologram">Hologram</option><option value="skin">Skin</option></select></div></div>
+<label>Changelog</label><input id="cl"/>
+<div class="row">
+<div class="fb"><b id="fl">.3105</b><input type="file" id="file" accept=".3105,.3105pass" onchange="fl.textContent=this.files[0]?.name||'.3105'"/></div>
+<div class="fb"><b id="il">Icone</b><input type="file" id="icon" accept="image/*" onchange="il.textContent=this.files[0]?.name||'Icone'"/></div>
+</div>
+<button class="btn bp" id="pub" onclick="pub()">Publicar</button></div>
+<div class="card"><h2>Patches <span id="cnt" style="color:var(--m)"></span></h2><div id="list"></div></div>
+<button class="btn bg" onclick="localStorage.removeItem('gh3105');location.reload()">Sair</button>
+</div></div><div class="toast" id="t"></div>
+<script>
+const B="main",RAW=(o,r,p)=>`https://raw.githubusercontent.com/${o}/${r}/${B}/${p}`;
+const API=(o,r,p)=>`https://api.github.com/repos/${o}/${r}/contents/${p}`;
+let C=JSON.parse(localStorage.getItem("gh3105")||"null");
+const toast=m=>{const e=document.getElementById("t");e.textContent=m;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2500)};
+const H=()=>({Authorization:`Bearer ${C.token}`,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"});
+async function get(p){const r=await fetch(API(C.owner,C.repo,p),{headers:H()});if(r.status===404)return null;if(!r.ok)throw new Error(await r.text());return r.json()}
+async function put(p,b64,msg,sha){const b={message:msg,content:b64,branch:B};if(sha)b.sha=sha;const r=await fetch(API(C.owner,C.repo,p),{method:"PUT",headers:{...H(),"Content-Type":"application/json"},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json()}
+async function del(p,sha,msg){const r=await fetch(API(C.owner,C.repo,p),{method:"DELETE",headers:{...H(),"Content-Type":"application/json"},body:JSON.stringify({message:msg,sha,branch:B})});if(!r.ok)throw new Error(await r.text())}
+const b64=f=>new Promise((res,rej)=>{const x=new FileReader();x.onload=()=>res(x.result.slice(x.result.indexOf(",")+1));x.onerror=rej;x.readAsDataURL(f)});
+async function sha(f){const h=await crypto.subtle.digest("SHA-256",await f.arrayBuffer());return[...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")}
+async function load(){const st=await get("state.json"),fd=await get("feed.json");
+if(st){const d=JSON.parse(atob(st.content.replace(/\n/g,"")));return{v:d.version||1,p:d.patches||[],fs:fd&&fd.sha,ss:st.sha}}
+if(fd){const d=JSON.parse(atob(fd.content.replace(/\n/g,"")));const j=d.result&&d.result.data&&d.result.data.json||d;return{v:j.version||1,p:j.patches||[],fs:fd.sha,ss:null}}
+return{v:1,p:[],fs:null,ss:null}}
+async function save(v,p,fs,ss){await put("state.json",btoa(unescape(encodeURIComponent(JSON.stringify({version:v,patches:p},null,2)))),`state v${v}`,ss);
+const active=p.filter(x=>!x.maintenance);const feed={result:{data:{json:{version:v,patches:active}}}};
+await put("feed.json",btoa(unescape(encodeURIComponent(JSON.stringify(feed,null,2)))),`feed v${v}`,fs)}
+function go(){const tok=document.getElementById("token").value.trim(),own=document.getElementById("owner").value.trim(),rep=document.getElementById("repo").value.trim();
+if(!tok)return toast("Token");C={token:tok,owner:own,repo:rep};localStorage.setItem("gh3105",JSON.stringify(C));enter()}
+async function enter(){document.getElementById("setup").classList.add("hidden");document.getElementById("dash").classList.remove("hidden");try{await ref()}catch(e){toast("Token invalido");localStorage.removeItem("gh3105");location.reload()}}
+async function ref(){const s=await load();document.getElementById("cnt").textContent="("+s.p.length+")";
+const list=document.getElementById("list");
+list.innerHTML=s.p.length?s.p.slice().sort((a,b)=>b.updatedAt-a.updatedAt).map(p=>{
+const ic=p.iconUrl?`<img src="${p.iconUrl}?t=${p.updatedAt}"/>`:`<div class="ph">📦</div>`;
+return `<div class="item">${ic}<div class="meta"><h3>${p.name}</h3><p>${p.fileName} · ${(p.fileSize/1024).toFixed(1)}KB ${p.maintenance?"· MANUTENCAO":""}</p></div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<button class="btn bg" style="padding:6px 10px;font-size:.75rem" onclick="rn(${p.id})">Nome</button>
+<button class="btn bw" style="padding:6px 10px;font-size:.75rem" onclick="tm(${p.id})">${p.maintenance?"Ativar":"Manut."}</button>
+<button class="btn bd" style="padding:6px 10px;font-size:.75rem" onclick="dp(${p.id})">Apagar</button></div></div>`}).join(""):"<p style=color:var(--m);text-align:center>Nenhum patch</p>"}
+async function pub(){const nm=document.getElementById("name").value.trim(),fl=document.getElementById("file").files[0];if(!nm||!fl)return toast("Nome e arquivo");
+const btn=document.getElementById("pub");btn.disabled=true;btn.textContent="Enviando...";
+try{const s=await load();const id=(s.p.reduce((m,x)=>Math.max(m,x.id),0)||0)+1;const sum=await sha(fl);
+const fk="patches/"+id+"_"+fl.name.replace(/[^a-zA-Z0-9._-]/g,"_");await put(fk,await b64(fl),"add "+id);
+let iconUrl=null;const ic=document.getElementById("icon").files[0];if(ic){const ik="icons/"+id+"_"+ic.name.replace(/[^a-zA-Z0-9._-]/g,"_");await put(ik,await b64(ic),"icon "+id);iconUrl=RAW(C.owner,C.repo,ik)}
+s.p.push({id,name:nm,category:document.getElementById("cat").value,feature:document.getElementById("feat").value,fileName:fl.name,fileKey:fk,fileUrl:RAW(C.owner,C.repo,fk),mimeType:"application/octet-stream",fileSize:fl.size,version:1,changelog:document.getElementById("cl").value||null,checksumSha256:sum,iconUrl,maintenance:false,updatedAt:Date.now()});
+await save(s.v+1,s.p,s.fs,s.ss);toast("Publicado");document.getElementById("name").value="";document.getElementById("cl").value="";document.getElementById("file").value="";document.getElementById("icon").value="";await ref()}
+catch(e){toast(String(e.message||e).slice(0,100))}finally{btn.disabled=false;btn.textContent="Publicar"}}
+async function rn(id){const n=prompt("Nome");if(!n)return;const s=await load();const p=s.p.find(x=>x.id===id);if(!p)return;p.name=n.trim();p.updatedAt=Date.now();p.version++;await save(s.v+1,s.p,s.fs,s.ss);await ref()}
+async function tm(id){const s=await load();const p=s.p.find(x=>x.id===id);if(!p)return;p.maintenance=!p.maintenance;p.updatedAt=Date.now();await save(s.v+1,s.p,s.fs,s.ss);await ref()}
+async function dp(id){if(!confirm("Apagar?"))return;const s=await load();const p=s.p.find(x=>x.id===id);if(!p)return;
+try{if(p.fileKey){const f=await get(p.fileKey);if(f)await del(p.fileKey,f.sha,"del")}}catch(e){}
+s.p=s.p.filter(x=>x.id!==id);await save(s.v+1,s.p,s.fs,s.ss);await ref()}
+if(C)enter();
+</script></body></html>
